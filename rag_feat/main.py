@@ -42,9 +42,9 @@ def extract_file_content(file_path):
     elif(file_type == "image"):
         loader = UnstructuredImageLoader(file_path)
     documents = loader.load()
-    # documents_content = '\n'.join(doc.page_content for doc in documents)
-    # return documents_content
-    return documents
+    documents_content = '\n'.join(doc.page_content for doc in documents)
+    return documents_content
+    #return documents
 
 
 
@@ -78,7 +78,7 @@ def save_to_db(index, embeddings, file_path):
        os.makedirs(os.path.join(current_dir, "faiss_index"))
     file_content = extract_file_content(file_path)
     file_splitter = text_splitter.split_documents(file_content)
-    db = index.from_documents(file_splitter, embeddings)
+    db = index.from_texts(file_splitter, embeddings)
         
     db.save_local("faiss_index")
     print("Indexes saved to Faiss Index DB.")
