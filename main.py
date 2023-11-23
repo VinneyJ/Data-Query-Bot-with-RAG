@@ -10,13 +10,14 @@ from langchain.chains.question_answering import load_qa_chain
 from langchain.vectorstores import Pinecone
 from langchain.vectorstores import FAISS
 import pinecone
+
 pinecone.init(
     api_key=os.getenv("PINECONE_API_KEY"),  
     environment=os.getenv("PINECONE_ENV"),  
 )
-open_ai = os.getenv("OPENAI_API_KEY")
+open_ai= os.getenv("OPENAI_API_KEY")
 
-chat = ChatOpenAI(model_name='gpt-3.5-turbo-16k', openai_api_key=open_ai)
+# chat = ChatOpenAI(model_name='gpt-3.5-turbo-16k', openai_api_key=open_ai)
 
 
 embeddings = OpenAIEmbeddings(openai_api_key=open_ai)
@@ -37,7 +38,7 @@ def detect_document_type(document_path):
         
     return file_type
 
-research_paper_path = "transformer.pdf"
+research_paper_path = "TaxProceduresAct29of2015.pdf"
 
 def extract_file_content(file_path):
     
@@ -99,6 +100,30 @@ def chat_with_file(file_path, query):
     results = results['intermediate_steps'][0]
     
     return results
+
+
+
+# def read_pdf_files(folder_path):
+#     pdf_files = [file for file in os.listdir(folder_path) if file.endswith('.pdf')]
+
+#     for pdf_file in pdf_files:
+#         pdf_path = os.path.join(folder_path, pdf_file)
+#         doc = fitz.open(pdf_path)
+
+#         for page_number in range(doc.page_count):
+#             page = doc[page_number]
+#             text = page.get_text("text")
+            
+#             # Process the text as needed (e.g., analyze, extract information, etc.)
+#             # Example: print the text of each page
+#             print(f"Text from {pdf_file}, Page {page_number + 1}:\n{text}\n")
+
+#         doc.close()
+
+# Replace 'your_folder_path' with the actual path of your PDF files folder
+# folder_path = 'your_folder_path'
+# read_pdf_files(folder_path)
+
 #query = "Why is the self-attention approach used in this document?"
 query = str(input("Ask Something..."))
 
