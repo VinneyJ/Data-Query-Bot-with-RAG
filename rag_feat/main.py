@@ -14,7 +14,10 @@ import pinecone
 open_ai= os.getenv("OPENAI_API_KEY")
 
 
-def detect_document_type(document_path): 
+def detect_document_type(document_path):
+    """
+    Detects the file type
+    """
     guess_file = guess(document_path)
     file_type = ""
     image_types = ['jpg', 'jpeg', 'png', 'gif']
@@ -30,10 +33,12 @@ def detect_document_type(document_path):
         
     return file_type
 
-research_paper_path = "TaxProceduresAct29of2015.pdf"
+
 
 def extract_file_content(file_path):
-    
+    """
+    Exracts content from file
+    """
     file_type = detect_document_type(file_path)
     
     if(file_type == "pdf"):
@@ -44,17 +49,16 @@ def extract_file_content(file_path):
     documents = loader.load()
     documents_content = '\n'.join(doc.page_content for doc in documents)
     return documents_content
-    #return documents
+   
 
 
 
 text_splitter = CharacterTextSplitter(        
     separator = "\n\n",
-    chunk_size = 1000,
-    chunk_overlap  = 200,
+    chunk_size = 150,
+    chunk_overlap  = 10,
     length_function = len,
 )
-#research_paper_chunks = text_splitter.split_documents(research_paper_content)
 
 
 chain = load_qa_chain(OpenAI(), chain_type = "map_rerank",  
@@ -62,30 +66,38 @@ chain = load_qa_chain(OpenAI(), chain_type = "map_rerank",
 
 
 
-# def get_doc_search(text_splitter):
-#     db = FAISS.from_documents(text_splitter, embeddings)
-#     db.save_local("faiss_index")
-
-#     new_db = FAISS.load_local("faiss_index", embeddings)
-#     return new_db
-
 def save_to_db(index, embeddings, file_path):
-    current_dir = os.getcwd()
+    """
+    Saves embeddings to FAISS DB
+    """
 
-   # Check if the "faiss_index" directory exists in the current directory
-    if not os.path.exists(os.path.join(current_dir, "faiss_index")):
-       # If not, create it
-       os.makedirs(os.path.join(current_dir, "faiss_index"))
     file_content = extract_file_content(file_path)
-    file_splitter = text_splitter.split_documents(file_content)
-    db = index.from_texts(file_splitter, embeddings)
-        
-    db.save_local("faiss_index")
-    print("Indexes saved to Faiss Index DB.")
+    file_splitter = text_splitter.split_text(file_content)
+
+    try:
+        faiss_db = FAISS.from_documents(file_splitter, embeddings) 
+    except Exception as e:
+        faiss_db = FAISS.from_texts(file_splitter, embeddings)
+  
+    if os.path.exists(index):
+        local_db = FAISS.load_local(index, embeddings)
+        #merging the new embedding with the existing index store
+        local_db.merge_from(faiss_db)
+        print("Merge completed")
+        local_db.save_local(index)
+        print("Updated index saved")
+    else:
+        faiss_db.save_local(folder_path=index)
+        print("New store created...")
+
     
-def search_index(query):
+def search_index(query, embeddings):
+    """
+    Handles Search query
+    """
+
     # Load the Faiss index
-    index = FAISS.load_local("faiss_index")
+    index = FAISS.load_local("faiss_index", embeddings)
 
     # Search the index
     documents = index.similarity_search(query)
@@ -100,8 +112,12 @@ def search_index(query):
 
 
 def read_pdf_files(folder_path):
+    """
+    Reads pdf Files folder path
+    """
     embeddings = OpenAIEmbeddings(openai_api_key=open_ai)
-    index = FAISS.load_local("./faiss_index", embeddings)
+    
+    index = "faiss_index"
 
     pdf_files = [file for file in os.listdir(folder_path) if file.endswith('.pdf')]
     print(pdf_files)
@@ -109,38 +125,3 @@ def read_pdf_files(folder_path):
         pdf_path = os.path.join(folder_path, pdf_file)
         save_to_db(index, embeddings, pdf_path)
         
-     
-
-# def chat_with_file(file_path, query):
-    
-#     file_content = extract_file_content(file_path)
-#     file_splitter = text_splitter.split_documents(file_content)
-#     #print(file_splitter)
-    
-#     document_search = get_doc_search(file_splitter)
-#     documents = document_search.similarity_search(query)
-    
-#     results = chain({
-#                         "input_documents":documents, 
-#                         "question": query
-#                     }, 
-#                     return_only_outputs=True)
-#     results = results['intermediate_steps'][0]
-    
-#     return results
-
-
-
-
-
-
-#query = "Why is the self-attention approach used in this document?"
-# query = str(input("Ask Something..."))
-
-# results = chat_with_file(research_paper_path, query)
-# print(f"THese are results {results}")
-
-# answer = results["answer"]
-# confidence_score = results["score"]
-
-# print(f"Answer: {answer}\n\nConfidence Score: {confidence_score}")
