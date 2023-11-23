@@ -1,4 +1,5 @@
 import os
+import time
 from filetype import guess
 from langchain.document_loaders.image import UnstructuredImageLoader
 from langchain.document_loaders import UnstructuredFileLoader
@@ -123,5 +124,6 @@ def read_pdf_files(folder_path):
     print(pdf_files)
     for pdf_file in pdf_files:
         pdf_path = os.path.join(folder_path, pdf_file)
+        time.sleep(25)
         save_to_db(index, embeddings, pdf_path)
         
